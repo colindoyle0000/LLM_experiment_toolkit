@@ -98,32 +98,120 @@ class OpenAIClient:
         self.temperature = temperature
         self.max_tokens = max_tokens
 
-    def _uses_max_completion_tokens(self) -> bool:
-        """Newer OpenAI models (o1, o3, o4-mini, gpt-5, etc.) use max_completion_tokens."""
+    def _uses_responses_api(self) -> bool:
+        """Reasoning-era OpenAI models work more reliably with the Responses API."""
         name = self.model_name.lower()
         import re
         return bool(re.match(r"o\d", name)) or name.startswith("gpt-5")
 
+    def _default_reasoning(self) -> dict[str, str] | None:
+        """
+        GPT-5 spends from the same output-token budget on hidden reasoning.
+        A minimal default avoids blank responses at modest max_tokens values.
+        """
+        name = self.model_name.lower()
+        if name.startswith("gpt-5") and "pro" not in name:
+            return {"effort": "minimal"}
+        return None
+
+    @staticmethod
+    def _extract_response_text(response) -> str:
+        """
+        Prefer the SDK's flattened text helper, then fall back to the raw
+        output structure if needed.
+        """
+        text = getattr(response, "output_text", None)
+        if text:
+            return text
+
+        pieces: list[str] = []
+        for item in getattr(response, "output", []) or []:
+            if getattr(item, "type", None) != "message":
+                continue
+            for content in getattr(item, "content", []) or []:
+                content_type = getattr(content, "type", None)
+                if content_type in ("output_text", "text"):
+                    piece = getattr(content, "text", "") or ""
+                    if piece:
+                        pieces.append(piece)
+        return "".join(pieces)
+
+    @staticmethod
+    def _extract_usage_tokens(response) -> tuple[int, int]:
+        """Handle usage objects from both chat completions and responses."""
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return 0, 0
+
+        input_tokens = (
+            getattr(usage, "input_tokens", None)
+            or getattr(usage, "prompt_tokens", None)
+            or 0
+        )
+        output_tokens = (
+            getattr(usage, "output_tokens", None)
+            or getattr(usage, "completion_tokens", None)
+            or 0
+        )
+        return int(input_tokens), int(output_tokens)
+
+    @staticmethod
+    def _extract_api_error(response) -> str | None:
+        """Surface non-exception OpenAI failures instead of writing a blank file."""
+        error = getattr(response, "error", None)
+        if error:
+            message = getattr(error, "message", None)
+            return str(message or error)
+
+        status = getattr(response, "status", None)
+        if status and status != "completed":
+            details = getattr(response, "incomplete_details", None)
+            if details:
+                reason = getattr(details, "reason", None)
+                if reason == "max_output_tokens":
+                    return (
+                        "OpenAI hit max_output_tokens before producing visible text. "
+                        "Increase max_tokens for this model."
+                    )
+                return f"OpenAI response status '{status}': {details}"
+            return f"OpenAI response status '{status}'"
+
+        return None
+
     def call(self, system_prompt: str, user_prompt: str) -> ModelResponse:
         start = time.time()
         try:
-            is_new_model = self._uses_max_completion_tokens()
-            token_param = "max_completion_tokens" if is_new_model else "max_tokens"
-            params = {
-                "model": self.model_name,
-                token_param: self.max_tokens,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-            }
-            if not is_new_model:
-                params["temperature"] = self.temperature
-            response = self._client.chat.completions.create(**params)
-            content = response.choices[0].message.content
-            input_tokens = response.usage.prompt_tokens
-            output_tokens = response.usage.completion_tokens
-            error = None
+            if self._uses_responses_api():
+                params = {
+                    "model": self.model_name,
+                    "instructions": system_prompt,
+                    "input": user_prompt,
+                    "max_output_tokens": self.max_tokens,
+                }
+                reasoning = self._default_reasoning()
+                if reasoning:
+                    params["reasoning"] = reasoning
+                response = self._client.responses.create(**params)
+                content = self._extract_response_text(response)
+                input_tokens, output_tokens = self._extract_usage_tokens(response)
+                error = self._extract_api_error(response)
+                if content:
+                    error = None
+                elif not error:
+                    error = "OpenAI returned an empty response"
+            else:
+                response = self._client.chat.completions.create(
+                    model=self.model_name,
+                    max_tokens=self.max_tokens,
+                    temperature=self.temperature,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                )
+                content = response.choices[0].message.content or ""
+                input_tokens, output_tokens = self._extract_usage_tokens(response)
+                error = None
         except Exception as e:
             content = ""
             input_tokens = 0
@@ -157,19 +245,34 @@ class GeminiClient:
         self.temperature = temperature
         self.max_tokens = max_tokens
 
+    def _default_thinking_config(self, types_module):
+        """
+        Gemini 2.5 Pro can return empty text under dynamic thinking even when
+        Flash succeeds on the same prompt. Pinning the minimum valid thinking
+        budget makes Pro's behavior much more stable for this toolkit.
+        """
+        if self.model_name.lower().startswith("gemini-2.5-pro"):
+            return types_module.ThinkingConfig(thinking_budget=128)
+        return None
+
     def call(self, system_prompt: str, user_prompt: str) -> ModelResponse:
         from google.genai import types
 
         start = time.time()
         try:
+            config = types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                temperature=self.temperature,
+                max_output_tokens=self.max_tokens,
+            )
+            thinking_config = self._default_thinking_config(types)
+            if thinking_config is not None:
+                config.thinking_config = thinking_config
+
             response = self._client.models.generate_content(
                 model=self.model_name,
                 contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    temperature=self.temperature,
-                    max_output_tokens=self.max_tokens,
-                ),
+                config=config,
             )
             content = response.text or ""
             # Gemini token counts come from usage_metadata
@@ -191,6 +294,11 @@ class GeminiClient:
                 block_reason = getattr(prompt_feedback, "block_reason", None)
                 if block_reason:
                     error = f"Blocked by Gemini (prompt): {block_reason}"
+                elif finish_reason and str(finish_reason) in ("FinishReason.MAX_TOKENS", "MAX_TOKENS"):
+                    error = (
+                        "Gemini hit max_output_tokens before producing visible text. "
+                        "Increase max_tokens for this model."
+                    )
                 elif safety_info:
                     error = f"Blocked by Gemini (safety): {safety_info}"
                 elif finish_reason and str(finish_reason) not in ("FinishReason.STOP", "STOP", "1"):

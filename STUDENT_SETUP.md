@@ -89,10 +89,6 @@ Then run this command to download the project:
 git clone https://github.com/colindoyle0000/LLM_experiment_toolkit
 ```
 
-> **Note:** Replace `GITHUB_URL_FROM_BRIGHTSPACE` with the actual link your
-> instructor posted on Brightspace. It will look something like
-> `https://github.com/instructorname/LLM_experiment_toolkit`.
-
 After a moment you'll see some progress messages, and a new folder called
 `LLM_experiment_toolkit` will appear in your Documents.
 
@@ -109,7 +105,7 @@ Leave the terminal window open — you'll use it in the next steps.
 ## Step 4: Add your .env file
 
 Your `.env` file contains your personal API keys. It was posted privately for
-you on Brightspace.
+you on Brightspace under assignments.
 
 1. Download your `.env` file from Brightspace.
 2. Move it into the `LLM_experiment_toolkit` folder you just downloaded.
@@ -196,9 +192,9 @@ editor or web browser). It covers:
 
 ## Getting updates
 
-When your instructor fixes a bug or adds something to the toolkit, you can
-get the update with one command. In your terminal, navigate to the project
-folder and run:
+When the toolkit is updated on Github (usually to fix an error or add a new
+feature), you can get the update with one command. In your terminal, navigate
+to the project folder and run:
 
 ```
 git pull
@@ -207,23 +203,5 @@ git pull
 That's it. Your experiment files (in the `experiments/` folder) and your
 `.env` file will not be touched — only the toolkit's core files will update.
 
-Your instructor will post a Brightspace announcement whenever there's an
-update worth pulling.
-
 > **If you get an error about "merge conflicts":** This usually means you
-> accidentally edited a file outside the `experiments/` folder. Contact your
-> instructor for help — don't try to resolve it yourself.
-
----
-
-## Quick reference
-
-| Task | Command |
-| --- | --- |
-| Open a terminal | Mac: Cmd + Space → "Terminal" / Windows: search for "Git Bash" |
-| Go to the project folder | `cd ~/Documents/LLM_experiment_toolkit` |
-| Activate virtual environment (if you set one up) | `source .venv/bin/activate` |
-| Verify setup | `python verify_setup.py` |
-| Run an experiment | `python run_experiment.py` |
-| Get updates | `git pull` |
-| See available models | `python check_models.py` |
+> accidentally edited a file outside the `experiments/` folder.
