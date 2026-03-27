@@ -176,7 +176,29 @@ class GeminiClient:
             meta = response.usage_metadata
             input_tokens = getattr(meta, "prompt_token_count", 0) or 0
             output_tokens = getattr(meta, "candidates_token_count", 0) or 0
-            error = None
+            # Detect safety blocks: Gemini returns empty text instead of raising
+            if not content:
+                finish_reason = None
+                safety_info = ""
+                candidates = getattr(response, "candidates", None)
+                if candidates:
+                    finish_reason = getattr(candidates[0], "finish_reason", None)
+                    ratings = getattr(candidates[0], "safety_ratings", []) or []
+                    blocked = [r for r in ratings if getattr(r, "blocked", False)]
+                    if blocked:
+                        safety_info = "; ".join(str(r.category) for r in blocked)
+                prompt_feedback = getattr(response, "prompt_feedback", None)
+                block_reason = getattr(prompt_feedback, "block_reason", None)
+                if block_reason:
+                    error = f"Blocked by Gemini (prompt): {block_reason}"
+                elif safety_info:
+                    error = f"Blocked by Gemini (safety): {safety_info}"
+                elif finish_reason and str(finish_reason) not in ("FinishReason.STOP", "STOP", "1"):
+                    error = f"Gemini finish_reason: {finish_reason}"
+                else:
+                    error = "Gemini returned empty response (unknown reason)"
+            else:
+                error = None
         except Exception as e:
             content = ""
             input_tokens = 0

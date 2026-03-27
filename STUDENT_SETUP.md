@@ -4,16 +4,13 @@ Follow these steps the first time you set up the toolkit on your computer.
 After that, the only thing you'll ever need to do to get updates is run one
 short command (described at the end).
 
-If you get stuck at any step, post in the class Brightspace discussion or
-email your instructor before spending too much time troubleshooting.
-
 ---
 
 ## What you'll need before you start
 
 - Your personal `.env` file (downloaded from Brightspace — it contains your
   API keys)
-- About 20–30 minutes the first time
+
 
 ---
 
@@ -89,7 +86,7 @@ cd ~/Documents
 Then run this command to download the project:
 
 ```
-git clone GITHUB_URL_FROM_BRIGHTSPACE
+git clone https://github.com/colindoyle0000/LLM_experiment_toolkit
 ```
 
 > **Note:** Replace `GITHUB_URL_FROM_BRIGHTSPACE` with the actual link your
