@@ -23,7 +23,7 @@ Use forward slashes ( / ), not backslashes ( \\ ).
 
 from llm_toolkit.runner import ExperimentRunner
 
-CONFIG_PATH = "experiments/example_data_iteration/config.yaml"
+CONFIG_PATH = "experiments/example_variable_groups/config.yaml"
 
 # =============================================================================
 # Do not edit below this line.
