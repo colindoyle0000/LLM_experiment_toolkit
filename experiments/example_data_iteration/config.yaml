@@ -1,0 +1,89 @@
+# =============================================================================
+# EXPERIMENT CONFIG: Data Iteration
+#
+# This experiment asks: can the model correctly identify the holding of a case?
+#
+# HOW THIS PATTERN WORKS:
+#   The toolkit reads a CSV file (cases.csv) row by row. For each row, it
+#   fills in the {{placeholders}} in your prompt with the values from that
+#   row's columns, then sends the completed prompt to the model.
+#
+#   Every column name in your CSV becomes a {{variable}} you can use in
+#   your prompt. For example, if your CSV has a column called "case_name",
+#   you can write {{case_name}} in your prompt file.
+#
+# TO ADAPT THIS FOR YOUR OWN RESEARCH:
+#   1. Change experiment_name to something descriptive (no spaces — use underscores)
+#   2. Replace cases.csv with your own CSV file
+#      - First row must be column headers (short names, no spaces)
+#      - One row per case, statute, contract, etc.
+#   3. Edit system_prompt.txt and user_prompt.txt to match your task
+#      - Use {{column_name}} anywhere you want CSV data inserted
+#   4. Set row_id_column to whichever column uniquely identifies each row
+#   5. Point run_experiment.py at this file and run it
+# =============================================================================
+
+
+# A short name for this experiment. No spaces — use underscores.
+experiment_name: holding_identification
+
+# Which experiment pattern to use.
+# data_iteration = run the same prompt on every row of a CSV file
+pattern: data_iteration
+
+
+# -------------------------------------------------------------------
+# MODEL SETTINGS
+# -------------------------------------------------------------------
+# See the variable_groups example config for full documentation
+# of these fields. The settings work the same way here.
+# -------------------------------------------------------------------
+
+model:
+  - provider: anthropic
+    name: claude-sonnet-4-6
+    temperature: 0.0
+    max_tokens: 500
+  - provider: openai
+    name: gpt-5
+    temperature: 0.0
+    max_tokens: 500
+  - provider: google
+    name: gemini-2.5-pro
+    temperature: 0.0
+    max_tokens: 500
+
+
+# -------------------------------------------------------------------
+# PROMPT FILES
+# -------------------------------------------------------------------
+
+prompts:
+  system: system_prompt.txt
+  user: user_prompt.txt
+
+
+# -------------------------------------------------------------------
+# REPETITIONS
+# -------------------------------------------------------------------
+
+repetitions: 1
+
+
+# -------------------------------------------------------------------
+# DATA FILE SETTINGS
+# -------------------------------------------------------------------
+# data_file: the CSV file with your inputs.
+#   - Must be in the same folder as this config.yaml
+#   - First row must be column headers
+#   - One row per item (case, statute, document, etc.)
+#   - Column names become {{variables}} in your prompt files
+#
+# row_id_column: which column to use when naming output files.
+#   - Choose a column that uniquely identifies each row
+#   - For cases: the case name works well
+#   - For documents: a document ID or title works well
+# -------------------------------------------------------------------
+
+data_file: cases.csv
+row_id_column: case_name

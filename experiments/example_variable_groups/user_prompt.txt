@@ -1,0 +1,9 @@
+You are advising {{user_persona}}.
+
+Please review the following force majeure clause from a commercial lease agreement and explain:
+1. What this clause means in practical terms
+2. Whether it is favorable, unfavorable, or neutral for a tenant
+3. One specific concern or recommendation
+
+Clause:
+"Neither party shall be liable for any failure or delay in performance under this Agreement to the extent such failure or delay is caused by circumstances beyond that party's reasonable control, including but not limited to acts of God, government actions, war, civil unrest, pandemic, or labor disputes, provided that the affected party gives prompt written notice to the other party and uses commercially reasonable efforts to resume performance as soon as practicable."

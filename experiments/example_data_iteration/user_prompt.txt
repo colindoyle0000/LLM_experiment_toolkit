@@ -1,0 +1,10 @@
+Case: {{case_name}}
+Court: {{court}}
+Year: {{year}}
+
+Excerpt from the opinion:
+{{opinion_excerpt}}
+
+---
+
+Please identify the holding of this case in one or two sentences. Begin your response with "The holding is:"

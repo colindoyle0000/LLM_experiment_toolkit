@@ -1,0 +1,121 @@
+# =============================================================================
+# EXPERIMENT CONFIG: Variable Groups
+#
+# This experiment asks: does described user expertise change the AI's advice?
+#
+# HOW THIS PATTERN WORKS:
+#   The prompt files contain a placeholder: {{user_persona}}
+#   This config defines three groups, each with a different value for that
+#   placeholder. The toolkit runs the prompt once per group, swapping in
+#   the group's value before sending it to the model.
+#
+# TO ADAPT THIS FOR YOUR OWN RESEARCH:
+#   1. Change experiment_name to something descriptive (no spaces — use underscores)
+#   2. Choose your model(s) from the Available Models list in README.md
+#   3. Edit system_prompt.txt and user_prompt.txt with your own prompts
+#   4. Update the variable name and groups to match your research design
+#   5. Point run_experiment.py at this file and run it
+# =============================================================================
+
+
+# A short name for this experiment. No spaces — use underscores.
+# This appears in the output folder name so you can find your results.
+experiment_name: contract_advice_by_persona
+
+# Which experiment pattern to use.
+# variable_groups = run the same prompt for each group, varying one thing
+# data_iteration  = run the same prompt on every row of a CSV file
+pattern: variable_groups
+
+
+# -------------------------------------------------------------------
+# MODEL SETTINGS
+# -------------------------------------------------------------------
+# List the model(s) you want to use. You can list just one, or several
+# to compare responses across models.
+#
+# provider options: anthropic, openai, google
+# name options: see Available Models in README.md
+#
+# temperature: how random/creative the responses are
+#   0.0 = always the same response (best for research — use this)
+#   1.0 = noticeably different each time
+#
+# max_tokens: the longest response allowed, measured in tokens
+#   One token ≈ three-quarters of a word
+#   500  ≈ ~375 words (short answer)
+#   1000 ≈ ~750 words (a paragraph or two)
+#   2000 ≈ ~1500 words (longer analysis)
+# -------------------------------------------------------------------
+
+model:
+  - provider: anthropic
+    name: claude-sonnet-4-6
+    temperature: 0.0
+    max_tokens: 1000
+  - provider: openai
+    name: gpt-5
+    temperature: 0.0
+    max_tokens: 1000
+  - provider: google
+    name: gemini-2.5-pro
+    temperature: 0.0
+    max_tokens: 1000
+
+
+# -------------------------------------------------------------------
+# PROMPT FILES
+# -------------------------------------------------------------------
+# These paths are relative to this config.yaml file.
+# If your prompt files are in the same folder as this file (they should
+# be), just use the file name.
+#
+# system_prompt.txt — tells the model what role it plays
+# user_prompt.txt   — the actual question or task you are asking
+# -------------------------------------------------------------------
+
+prompts:
+  system: system_prompt.txt
+  user: user_prompt.txt
+
+
+# -------------------------------------------------------------------
+# REPETITIONS
+# -------------------------------------------------------------------
+# How many times to run each condition.
+#
+# With temperature: 0.0, every repetition produces the same result.
+# Use repetitions: 1 unless you are studying variation.
+#
+# With a higher temperature (e.g. 0.7), each repetition may differ.
+# Use repetitions: 3 or more to measure how much responses vary.
+# -------------------------------------------------------------------
+
+repetitions: 1
+
+
+# -------------------------------------------------------------------
+# VARIABLE GROUPS
+# -------------------------------------------------------------------
+# variable: the placeholder name used in your prompt files.
+#   It must exactly match what you wrote in {{double_curly_braces}},
+#   including capitalization. No spaces — use underscores.
+#
+# groups: the list of conditions to test.
+#   Each group needs:
+#     name  — a short label for output file names (no spaces)
+#     value — the text that replaces {{variable}} in the prompt
+#
+# The toolkit will make one API call per group (times models times
+# repetitions). Add or remove groups freely.
+# -------------------------------------------------------------------
+
+variable: user_persona
+
+groups:
+  - name: pro_se_litigant
+    value: "a pro se litigant with no legal training"
+  - name: solo_practitioner
+    value: "a solo practitioner attorney with five years of experience"
+  - name: biglaw_partner
+    value: "a senior partner at a large law firm specializing in corporate contracts"
